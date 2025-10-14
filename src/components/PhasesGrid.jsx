@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
     AlertTriangle,
     FileText,
@@ -119,7 +120,12 @@ const PhasesGrid = () => {
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{phase.title}</h3>
                                 <p className="text-sm text-gray-600 mb-3">{phase.description}</p>
-                                <a href="#" className="text-blue-600 hover:text-blue-800 text-sm font-medium">View Details →</a>
+                                <Link
+                                    to={`/applications?status=${encodeURIComponent(phase.title)}`}
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                >
+                                    View Details →
+                                </Link>
                             </div>
                         </div>
                     );

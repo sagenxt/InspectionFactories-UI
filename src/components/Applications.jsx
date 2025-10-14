@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { inspectionAPI } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
+import StatusUpdateModal from './StatusUpdateModal';
 import {
     AlertTriangle,
     FileText,
@@ -12,11 +14,13 @@ import {
     ChevronLeft,
     ChevronRight,
     Filter,
-    X
+    X,
+    Edit
 } from 'lucide-react';
 
 const Applications = () => {
-    const { showError } = useToast();
+    const { showError, showSuccess } = useToast();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedPhase, setSelectedPhase] = useState(null);
@@ -25,6 +29,9 @@ const Applications = () => {
         page: 1,
         limit: 10
     });
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedApplication, setSelectedApplication] = useState(null);
+    const [initialized, setInitialized] = useState(false);
 
     const phases = [
         {
@@ -116,9 +123,23 @@ const Applications = () => {
         }
     }, [showError]);
 
+    // Initialize filter from URL search params on mount
     useEffect(() => {
-        loadApplications(1, pagination.limit, selectedPhase);
-    }, [selectedPhase]);
+        const statusParam = searchParams.get('status');
+        if (statusParam && !initialized) {
+            setSelectedPhase(statusParam);
+            setInitialized(true);
+        } else if (!initialized) {
+            setInitialized(true);
+        }
+    }, [searchParams, initialized]);
+
+    // Load applications when phase changes or on initialization
+    useEffect(() => {
+        if (initialized) {
+            loadApplications(1, pagination.limit, selectedPhase);
+        }
+    }, [selectedPhase, initialized, loadApplications, pagination.limit]);
 
     const handlePageChange = (newPage) => {
         if (newPage >= 1 && newPage <= Math.ceil(pagination.total / pagination.limit)) {
@@ -129,8 +150,13 @@ const Applications = () => {
     const handlePhaseFilter = (phaseName) => {
         if (selectedPhase === phaseName) {
             setSelectedPhase(null);
+            // Clear status from URL
+            searchParams.delete('status');
+            setSearchParams(searchParams);
         } else {
             setSelectedPhase(phaseName);
+            // Update URL with new status
+            setSearchParams({ status: phaseName });
         }
     };
 
@@ -142,6 +168,37 @@ const Applications = () => {
             iconColor: 'text-gray-500',
             icon: FileText
         };
+    };
+
+    const handleUpdateStatus = (application) => {
+        setSelectedApplication(application);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedApplication(null);
+    };
+
+    const handleSubmitStatusUpdate = async (newStatus, comment) => {
+        try {
+            const token = localStorage.getItem('token');
+            await inspectionAPI.updateApplicationStatus(
+                selectedApplication.id,
+                newStatus,
+                comment,
+                token
+            );
+
+            showSuccess('Application status updated successfully');
+
+            // Reload the current page to show updated data
+            loadApplications(pagination.page, pagination.limit, selectedPhase);
+        } catch (error) {
+            console.error('Error updating application status:', error);
+            showError('Failed to update application status. Please try again.');
+            throw error;
+        }
     };
 
     return (
@@ -272,9 +329,15 @@ const Applications = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <button className="ml-4 text-blue-600 hover:text-blue-800 text-sm font-medium whitespace-nowrap">
-                                            View Details →
-                                        </button>
+                                        <div className="ml-4 flex space-x-2">
+                                            <button
+                                                onClick={() => handleUpdateStatus(app)}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
+                                            >
+                                                <Edit className="h-4 w-4 mr-2" />
+                                                Update Status
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -314,6 +377,15 @@ const Applications = () => {
                     </div>
                 )}
             </div>
+
+            {/* Status Update Modal */}
+            <StatusUpdateModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                application={selectedApplication}
+                currentStatus={selectedApplication?.currentStatus}
+                onSubmit={handleSubmitStatusUpdate}
+            />
         </div>
     );
 };

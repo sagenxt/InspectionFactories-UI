@@ -307,6 +307,35 @@ export const inspectionAPI = {
       throw error;
     }
   },
+
+  updateApplicationStatus: async (applicationId, status, comment, token) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/applications/${applicationId}/status`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status,
+            comment,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Update application status error:", error);
+      throw error;
+    }
+  },
 };
 
 export default authAPI;
