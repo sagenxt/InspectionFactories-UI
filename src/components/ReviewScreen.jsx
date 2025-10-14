@@ -8,7 +8,7 @@ import { getCurrentLocation } from '../utils/location';
 const ReviewScreen = ({ token }) => {
     const { reportId } = useParams();
     const navigate = useNavigate();
-    const { showSuccess, showError, showLoading, dismissToast } = useToast();
+    const { showSuccess, showError } = useToast();
 
     const [sections, setSections] = useState([]);
     const [partASections, setPartASections] = useState([]);
@@ -32,7 +32,6 @@ const ReviewScreen = ({ token }) => {
     const loadReviewData = async () => {
         try {
             setLoading(true);
-            const loadingToast = showLoading('Loading inspection data for review...');
 
             // Load existing answers to determine which parts were filled
             const existingAnswers = await inspectionAPI.getAnswers(reportId, token);
@@ -89,8 +88,6 @@ const ReviewScreen = ({ token }) => {
 
             // Load questions for all sections
             await loadAllQuestions(partASectionsData, partBSectionsData, hasPartBAnswers);
-
-            dismissToast(loadingToast);
         } catch (error) {
             console.error('Error loading review data:', error);
             showError('Failed to load inspection data. Please try again.');
@@ -138,7 +135,6 @@ const ReviewScreen = ({ token }) => {
     const handleSubmit = async () => {
         try {
             setSubmitting(true);
-            const loadingToast = showLoading('Submitting inspection...');
 
             // Get current location - MANDATORY
             let coordinates = null;
@@ -148,7 +144,6 @@ const ReviewScreen = ({ token }) => {
                 console.log('Location captured successfully', coordinates);
             } catch (locationError) {
                 console.error('Could not get location:', locationError);
-                dismissToast(loadingToast);
                 showError(locationError.message || 'Location is required to submit inspection. Please enable location services and try again.');
                 setSubmitting(false);
                 return;
@@ -157,7 +152,6 @@ const ReviewScreen = ({ token }) => {
             // Submit the inspection report with coordinates
             await inspectionAPI.submitInspectionReport(reportId, coordinates, token);
 
-            dismissToast(loadingToast);
             showSuccess('Inspection submitted successfully! Thank you for completing the inspection.');
 
             // Navigate back to dashboard after successful submission

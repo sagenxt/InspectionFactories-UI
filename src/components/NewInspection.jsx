@@ -8,7 +8,7 @@ import SubmissionModal from './SubmissionModal';
 const NewInspection = ({ token }) => {
     const { reportId } = useParams();
     const navigate = useNavigate();
-    const { showSuccess, showError, showWarning, showInfo, showLoading, dismissToast } = useToast();
+    const { showSuccess, showError, showWarning, showInfo } = useToast();
     const [sections, setSections] = useState([]);
     const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
     const [questions, setQuestions] = useState([]);
@@ -54,7 +54,6 @@ const NewInspection = ({ token }) => {
     const loadExistingInspection = async (reportId) => {
         try {
             setLoading(true);
-            const loadingToast = showLoading('Loading existing inspection...');
 
             // Set the inspection report ID directly
             setInspectionReportId(reportId);
@@ -85,7 +84,6 @@ const NewInspection = ({ token }) => {
                 // Continue without prepopulating answers
             }
 
-            dismissToast(loadingToast);
             showSuccess(`Loaded existing inspection! Report ID: ${reportId}`);
             showInfo(`Loaded ${sectionsData.length} inspection sections`);
         } catch (error) {
@@ -205,11 +203,9 @@ const NewInspection = ({ token }) => {
 
         // Save current section answers before moving to next section
         setSaving(true);
-        const loadingToast = showLoading('Saving section...');
 
         try {
             await saveCurrentSectionAnswers();
-            dismissToast(loadingToast);
             showSuccess(`Section "${currentSection?.name}" saved successfully!`);
 
             if (currentSectionIndex < currentSections.length - 1) {
@@ -217,7 +213,6 @@ const NewInspection = ({ token }) => {
             }
         } catch (error) {
             console.error('Error saving section:', error);
-            dismissToast(loadingToast);
             showError('Failed to save section. Please try again.');
         } finally {
             setSaving(false);
@@ -257,12 +252,10 @@ const NewInspection = ({ token }) => {
     const loadPartBSections = async () => {
         try {
             setLoading(true);
-            const loadingToast = showLoading('Loading Part B sections...');
 
             const sectionsData = await inspectionAPI.getSections("B", token);
 
             if (sectionsData.length === 0) {
-                dismissToast(loadingToast);
                 showWarning('No Part B sections available for this inspection.');
                 setPartBSections([]);
                 setIsPartB(true);
@@ -274,7 +267,6 @@ const NewInspection = ({ token }) => {
             setIsPartB(true);
             setCurrentSectionIndex(0);
 
-            dismissToast(loadingToast);
             showSuccess(`Loaded ${sectionsData.length} Part B sections for detailed inspection`);
         } catch (error) {
             console.error('Error loading Part B sections:', error);
@@ -308,11 +300,9 @@ const NewInspection = ({ token }) => {
 
         // Save current section answers BEFORE going to review
         setSaving(true);
-        const loadingToast = showLoading('Saving final section...');
 
         try {
             await saveCurrentSectionAnswers();
-            dismissToast(loadingToast);
             showSuccess('All sections saved successfully!');
 
             if (isPartB) {
@@ -324,7 +314,6 @@ const NewInspection = ({ token }) => {
             }
         } catch (error) {
             console.error('Error saving final section:', error);
-            dismissToast(loadingToast);
             showError('Failed to save section. Please try again.');
         } finally {
             setSaving(false);

@@ -8,7 +8,7 @@ import PhasesGrid from './PhasesGrid';
 
 const MainContent = () => {
     const navigate = useNavigate();
-    const { showError, showLoading, dismissToast } = useToast();
+    const { showError } = useToast();
     const [activeReports, setActiveReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({
@@ -21,7 +21,6 @@ const MainContent = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            const loadingToast = showLoading('Loading active inspection reports...');
 
             const response = await inspectionAPI.getActiveInspectionReports(token, page, limit);
             // Handle both array response and paginated response
@@ -36,15 +35,13 @@ const MainContent = () => {
                     limit: response.limit || limit
                 });
             }
-
-            dismissToast(loadingToast);
         } catch (error) {
             console.error('Error loading active reports:', error);
             showError('Failed to load active inspection reports. Please try again.');
         } finally {
             setLoading(false);
         }
-    }, [showError, showLoading, dismissToast]);
+    }, [showError]);
 
     useEffect(() => {
         loadActiveReports();
