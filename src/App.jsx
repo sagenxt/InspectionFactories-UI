@@ -5,6 +5,7 @@ import LoginForm from './components/LoginForm';
 import MainContent from './components/MainContent';
 import NewInspection from './components/NewInspection';
 import ReviewScreen from './components/ReviewScreen';
+import Applications from './components/Applications';
 import { ToastProvider } from './contexts/ToastContext';
 
 function App() {
@@ -56,6 +57,7 @@ function App() {
               <Route path="/" element={<Dashboard onLogout={handleLogout} user={user} />}>
                 <Route index element={<MainContent />} />
                 <Route path="dashboard" element={<MainContent />} />
+                <Route path="applications" element={<Applications />} />
                 <Route path="inspection/:reportId" element={<NewInspection token={localStorage.getItem('token')} />} />
                 <Route path="inspection/:reportId/review" element={<ReviewScreen token={localStorage.getItem('token')} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

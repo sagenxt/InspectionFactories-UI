@@ -21,6 +21,6 @@ RUN yarn install
 # start app
 RUN yarn build
 
-EXPOSE 5005
+EXPOSE 5173
 
 CMD yarn dev

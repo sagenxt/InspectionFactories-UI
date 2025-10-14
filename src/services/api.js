@@ -280,6 +280,33 @@ export const inspectionAPI = {
       throw error;
     }
   },
+
+  getApplications: async (token, page = 1, limit = 10, status = null) => {
+    try {
+      let url = `${API_BASE_URL}/applications?page=${page}&limit=${limit}`;
+      if (status) {
+        url += `&status=${encodeURIComponent(status)}`;
+      }
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Get applications error:", error);
+      throw error;
+    }
+  },
 };
 
 export default authAPI;

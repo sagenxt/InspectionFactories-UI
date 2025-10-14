@@ -4,6 +4,7 @@ import {
     Home,
     BarChart3,
     FolderOpen,
+    FileText,
     Users,
     Settings,
     LogOut
@@ -12,6 +13,7 @@ import {
 const Sidebar = ({ onLogout, currentPage }) => {
     const menuItems = [
         { icon: Home, label: 'Dashboard', page: 'dashboard', path: '/dashboard' },
+        { icon: FileText, label: 'Applications', page: 'applications', path: '/applications' },
         { icon: BarChart3, label: 'Reports', page: 'reports', path: '/reports' },
         { icon: FolderOpen, label: 'Case Management', page: 'case-management', path: '/case-management' },
         { icon: Users, label: 'Users', page: 'users', path: '/users' },
