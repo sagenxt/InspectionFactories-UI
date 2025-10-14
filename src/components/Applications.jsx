@@ -175,8 +175,8 @@ const Applications = () => {
                                 key={phase.name}
                                 onClick={() => handlePhaseFilter(phase.name)}
                                 className={`p-4 rounded-lg border-2 transition-all duration-200 ${isSelected
-                                        ? `${phase.bgColor} ${phase.borderColor} shadow-md scale-105`
-                                        : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                                    ? `${phase.bgColor} ${phase.borderColor} shadow-md scale-105`
+                                    : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
                                     }`}
                             >
                                 <Icon className={`h-6 w-6 mx-auto mb-2 ${isSelected ? phase.iconColor : 'text-gray-400'}`} />
