@@ -15,7 +15,10 @@ import {
     ChevronRight,
     Filter,
     X,
-    Edit
+    Edit,
+    Download,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
 
 const Applications = () => {
@@ -32,6 +35,11 @@ const Applications = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedApplication, setSelectedApplication] = useState(null);
     const [initialized, setInitialized] = useState(false);
+    const [expandedApplications, setExpandedApplications] = useState({});
+    const [statusHistory, setStatusHistory] = useState({});
+    const [loadingHistory, setLoadingHistory] = useState({});
+    const [commentModalOpen, setCommentModalOpen] = useState(false);
+    const [selectedComment, setSelectedComment] = useState({ comment: '', status: '' });
 
     const phases = [
         {
@@ -102,9 +110,7 @@ const Applications = () => {
     const loadApplications = useCallback(async (page = 1, limit = 10, status = null) => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-
-            const response = await inspectionAPI.getApplications(token, page, limit, status);
+            const response = await inspectionAPI.getApplications(page, limit, status);
             const apps = response?.data || [];
             setApplications(apps);
 
@@ -182,12 +188,10 @@ const Applications = () => {
 
     const handleSubmitStatusUpdate = async (newStatus, comment) => {
         try {
-            const token = localStorage.getItem('token');
             await inspectionAPI.updateApplicationStatus(
                 selectedApplication.id,
                 newStatus,
-                comment,
-                token
+                comment
             );
 
             showSuccess('Application status updated successfully');
@@ -199,6 +203,62 @@ const Applications = () => {
             showError('Failed to update application status. Please try again.');
             throw error;
         }
+    };
+
+    const handleDownloadReport = async (inspectionReportId) => {
+        try {
+            await inspectionAPI.downloadInspectionReport(inspectionReportId);
+            showSuccess('Report downloaded successfully');
+        } catch (error) {
+            console.error('Error downloading report:', error);
+            showError('Failed to download report. Please try again.');
+        }
+    };
+
+    const toggleExpandApplication = async (applicationId) => {
+        const isExpanded = expandedApplications[applicationId];
+
+        if (!isExpanded && !statusHistory[applicationId]) {
+            // Load status history if not already loaded
+            try {
+                setLoadingHistory({ ...loadingHistory, [applicationId]: true });
+                const history = await inspectionAPI.getApplicationStatusHistory(applicationId);
+                setStatusHistory({ ...statusHistory, [applicationId]: history });
+                setLoadingHistory({ ...loadingHistory, [applicationId]: false });
+            } catch (error) {
+                console.error('Error loading status history:', error);
+                showError('Failed to load status history. Please try again.');
+                setLoadingHistory({ ...loadingHistory, [applicationId]: false });
+                return;
+            }
+        }
+
+        setExpandedApplications({
+            ...expandedApplications,
+            [applicationId]: !isExpanded
+        });
+    };
+
+    const countWords = (text) => {
+        if (!text) return 0;
+        return text.trim().split(/\s+/).length;
+    };
+
+    const truncateComment = (comment) => {
+        if (!comment) return '';
+        const words = comment.trim().split(/\s+/);
+        if (words.length <= 50) return comment;
+        return words.slice(0, 50).join(' ') + '...';
+    };
+
+    const handleViewComment = (comment, status) => {
+        setSelectedComment({ comment, status });
+        setCommentModalOpen(true);
+    };
+
+    const handleCloseCommentModal = () => {
+        setCommentModalOpen(false);
+        setSelectedComment({ comment: '', status: '' });
     };
 
     return (
@@ -331,6 +391,29 @@ const Applications = () => {
                                         </div>
                                         <div className="ml-4 flex space-x-2">
                                             <button
+                                                onClick={() => toggleExpandApplication(app.id)}
+                                                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
+                                            >
+                                                {expandedApplications[app.id] ? (
+                                                    <>
+                                                        <ChevronUp className="h-4 w-4 mr-2" />
+                                                        Hide History
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <ChevronDown className="h-4 w-4 mr-2" />
+                                                        Show History
+                                                    </>
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={() => handleDownloadReport(app.inspectionReportId)}
+                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
+                                            >
+                                                <Download className="h-4 w-4 mr-2" />
+                                                Download PDF
+                                            </button>
+                                            <button
                                                 onClick={() => handleUpdateStatus(app)}
                                                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
                                             >
@@ -339,6 +422,77 @@ const Applications = () => {
                                             </button>
                                         </div>
                                     </div>
+
+                                    {/* Status History Section */}
+                                    {expandedApplications[app.id] && (
+                                        <div className="mt-4 pt-4 border-t border-gray-200">
+                                            {loadingHistory[app.id] ? (
+                                                <div className="flex items-center justify-center py-4">
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                                </div>
+                                            ) : statusHistory[app.id] && statusHistory[app.id].length > 0 ? (
+                                                <div>
+                                                    <h4 className="text-md font-semibold text-gray-800 mb-3">Status History</h4>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="min-w-full divide-y divide-gray-200">
+                                                            <thead className="bg-gray-50">
+                                                                <tr>
+                                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Status
+                                                                    </th>
+                                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Comment
+                                                                    </th>
+                                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                        Created At
+                                                                    </th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                                {statusHistory[app.id].map((history) => {
+                                                                    const wordCount = countWords(history.comment);
+                                                                    const needsViewMore = wordCount > 6;
+                                                                    return (
+                                                                        <tr key={history.id}>
+                                                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                                                {history.status}
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-sm text-gray-700">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="truncate max-w-md">
+                                                                                        {needsViewMore ? truncateComment(history.comment) : history.comment}
+                                                                                    </span>
+                                                                                    {needsViewMore && (
+                                                                                        <button
+                                                                                            onClick={() => handleViewComment(history.comment, history.status)}
+                                                                                            className="text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+                                                                                        >
+                                                                                            View More
+                                                                                        </button>
+                                                                                    )}
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                                                {new Date(history.createdAt).toLocaleDateString('en-US', {
+                                                                                    year: 'numeric',
+                                                                                    month: 'short',
+                                                                                    day: 'numeric',
+                                                                                    hour: '2-digit',
+                                                                                    minute: '2-digit'
+                                                                                })}
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-gray-500">No status history available.</p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
@@ -386,6 +540,45 @@ const Applications = () => {
                 currentStatus={selectedApplication?.currentStatus}
                 onSubmit={handleSubmitStatusUpdate}
             />
+
+            {/* Comment View Modal */}
+            {commentModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+                        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                            <h3 className="text-xl font-bold text-gray-800">Status Comment</h3>
+                            <button
+                                onClick={handleCloseCommentModal}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto max-h-[60vh]">
+                            <div className="mb-6 pb-4 border-b border-gray-200">
+                                <label className="text-sm font-semibold text-blue-600 uppercase tracking-wide">Status</label>
+                                <p className="mt-1 text-lg font-medium text-gray-900">
+                                    {selectedComment.status}
+                                </p>
+                            </div>
+                            <div>
+                                <label className="text-sm font-semibold text-green-600 uppercase tracking-wide">Comment</label>
+                                <p className="mt-2 text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                    {selectedComment.comment}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="p-6 border-t border-gray-200 flex justify-end">
+                            <button
+                                onClick={handleCloseCommentModal}
+                                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

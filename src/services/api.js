@@ -1,6 +1,11 @@
 const API_BASE_URL =
   "https://inspectionfactories-production.up.railway.app/api";
 
+// Helper function to get token from localStorage
+const getToken = () => {
+  return localStorage.getItem("token");
+};
+
 export const authAPI = {
   login: async (email, password) => {
     try {
@@ -29,8 +34,9 @@ export const authAPI = {
 };
 
 export const inspectionAPI = {
-  startInspection: async (token) => {
+  startInspection: async () => {
     try {
+      const token = getToken();
       const response = await fetch(`${API_BASE_URL}/inspection-reports/start`, {
         method: "POST",
         headers: {
@@ -51,8 +57,9 @@ export const inspectionAPI = {
     }
   },
 
-  getSections: async (formType = "A", token) => {
+  getSections: async (formType = "A") => {
     try {
+      const token = getToken();
       const response = await fetch(
         `${API_BASE_URL}/sections?formType=${formType}`,
         {
@@ -76,8 +83,9 @@ export const inspectionAPI = {
     }
   },
 
-  getQuestions: async (sectionId, token) => {
+  getQuestions: async (sectionId) => {
     try {
+      const token = getToken();
       const response = await fetch(
         `${API_BASE_URL}/questions?sectionId=${sectionId}`,
         {
@@ -101,8 +109,9 @@ export const inspectionAPI = {
     }
   },
 
-  submitAnswers: async (inspectionReportId, answers, token) => {
+  submitAnswers: async (inspectionReportId, answers) => {
     try {
+      const token = getToken();
       const response = await fetch(`${API_BASE_URL}/answers/section`, {
         method: "POST",
         headers: {
@@ -127,8 +136,9 @@ export const inspectionAPI = {
     }
   },
 
-  getActiveInspectionReports: async (token, page = 1, limit = 10) => {
+  getActiveInspectionReports: async (page = 1, limit = 10) => {
     try {
+      const token = getToken();
       const response = await fetch(
         `${API_BASE_URL}/inspection-reports/active?page=${page}&limit=${limit}`,
         {
@@ -152,8 +162,9 @@ export const inspectionAPI = {
     }
   },
 
-  getInspectionReport: async (inspectionReportId, token) => {
+  getInspectionReport: async (inspectionReportId) => {
     try {
+      const token = getToken();
       const response = await fetch(
         `${API_BASE_URL}/inspection-reports/${inspectionReportId}`,
         {
@@ -177,8 +188,9 @@ export const inspectionAPI = {
     }
   },
 
-  getAnswers: async (inspectionReportId, token) => {
+  getAnswers: async (inspectionReportId) => {
     try {
+      const token = getToken();
       const response = await fetch(
         `${API_BASE_URL}/answers?inspectionReportId=${inspectionReportId}`,
         {
@@ -202,8 +214,9 @@ export const inspectionAPI = {
     }
   },
 
-  submitInspectionReport: async (inspectionReportId, coordinates, token) => {
+  submitInspectionReport: async (inspectionReportId, coordinates) => {
     try {
+      const token = getToken();
       const response = await fetch(
         `${API_BASE_URL}/inspection-reports/submit`,
         {
@@ -231,8 +244,9 @@ export const inspectionAPI = {
     }
   },
 
-  getStatusSummary: async (token) => {
+  getStatusSummary: async () => {
     try {
+      const token = getToken();
       const response = await fetch(
         `${API_BASE_URL}/inspection-reports/status-summary`,
         {
@@ -256,8 +270,9 @@ export const inspectionAPI = {
     }
   },
 
-  getApplicationsStatusSummary: async (token) => {
+  getApplicationsStatusSummary: async () => {
     try {
+      const token = getToken();
       const response = await fetch(
         `${API_BASE_URL}/applications/status-summary`,
         {
@@ -281,8 +296,9 @@ export const inspectionAPI = {
     }
   },
 
-  getApplications: async (token, page = 1, limit = 10, status = null) => {
+  getApplications: async (page = 1, limit = 10, status = null) => {
     try {
+      const token = getToken();
       let url = `${API_BASE_URL}/applications?page=${page}&limit=${limit}`;
       if (status) {
         url += `&status=${encodeURIComponent(status)}`;
@@ -308,8 +324,9 @@ export const inspectionAPI = {
     }
   },
 
-  updateApplicationStatus: async (applicationId, status, comment, token) => {
+  updateApplicationStatus: async (applicationId, status, comment) => {
     try {
+      const token = getToken();
       const response = await fetch(
         `${API_BASE_URL}/applications/${applicationId}/status`,
         {
@@ -333,6 +350,128 @@ export const inspectionAPI = {
       return data;
     } catch (error) {
       console.error("Update application status error:", error);
+      throw error;
+    }
+  },
+
+  getCompletedInspections: async (page = 1, limit = 10) => {
+    try {
+      const token = getToken();
+      const response = await fetch(
+        `${API_BASE_URL}/inspection-reports/filter?status=complete&page=${page}&limit=${limit}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Get completed inspections error:", error);
+      throw error;
+    }
+  },
+
+  submitApplication: async (inspectionReportId, externalId) => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API_BASE_URL}/applications`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inspectionReportId: String(inspectionReportId),
+          externalId: String(externalId),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Throw error with backend message if available
+        const errorMessage =
+          data.error ||
+          data.message ||
+          `HTTP error! status: ${response.status}`;
+        throw new Error(errorMessage);
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Submit application error:", error);
+      throw error;
+    }
+  },
+
+  downloadInspectionReport: async (inspectionReportId) => {
+    try {
+      const token = getToken();
+      const response = await fetch(
+        `${API_BASE_URL}/download/inspection-report/${inspectionReportId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Get the blob from response
+      const blob = await response.blob();
+
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `inspection-report-${inspectionReportId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      return true;
+    } catch (error) {
+      console.error("Download inspection report error:", error);
+      throw error;
+    }
+  },
+
+  getApplicationStatusHistory: async (applicationId) => {
+    try {
+      const token = getToken();
+      const response = await fetch(
+        `${API_BASE_URL}/applications/${applicationId}/status-history`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Get application status history error:", error);
       throw error;
     }
   },

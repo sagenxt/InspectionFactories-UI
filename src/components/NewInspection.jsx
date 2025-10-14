@@ -5,7 +5,7 @@ import { ChevronRight, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import SubmissionModal from './SubmissionModal';
 
-const NewInspection = ({ token }) => {
+const NewInspection = () => {
     const { reportId } = useParams();
     const navigate = useNavigate();
     const { showSuccess, showError, showWarning, showInfo } = useToast();
@@ -59,13 +59,13 @@ const NewInspection = ({ token }) => {
             setInspectionReportId(reportId);
 
             // Load Part A sections
-            const sectionsData = await inspectionAPI.getSections("A", token);
+            const sectionsData = await inspectionAPI.getSections("A");
             setSections(sectionsData);
 
             // Load Part B sections (for reference when prepopulating answers)
             let partBSectionsData = [];
             try {
-                partBSectionsData = await inspectionAPI.getSections("B", token);
+                partBSectionsData = await inspectionAPI.getSections("B");
                 // Don't set as active yet, just store for reference
             } catch (error) {
                 console.warn('Could not load Part B sections:', error);
@@ -73,19 +73,19 @@ const NewInspection = ({ token }) => {
 
             // Try to load existing answers to prepopulate (for draft status)
             try {
-                const existingAnswers = await inspectionAPI.getAnswers(reportId, token);
+                const existingAnswers = await inspectionAPI.getAnswers(reportId);
                 console.log('Loaded existing answers:', existingAnswers);
                 if (existingAnswers.length > 0) {
                     prepopulateAnswers(existingAnswers, sectionsData, partBSectionsData);
-                    showInfo(`Resuming inspection with ${existingAnswers.length} existing answers`);
+                    // showInfo(`Resuming inspection with ${existingAnswers.length} existing answers`);
                 }
             } catch (answerError) {
                 console.warn('Could not load existing answers:', answerError);
                 // Continue without prepopulating answers
             }
 
-            showSuccess(`Loaded existing inspection! Report ID: ${reportId}`);
-            showInfo(`Loaded ${sectionsData.length} inspection sections`);
+            // showSuccess(`Loaded existing inspection! Report ID: ${reportId}`);
+            // showInfo(`Loaded ${sectionsData.length} inspection sections`);
         } catch (error) {
             console.error('Error loading existing inspection:', error);
             showError('Failed to load existing inspection. Please try again.');
@@ -137,7 +137,7 @@ const NewInspection = ({ token }) => {
     const loadQuestions = async (sectionId) => {
         try {
             setLoading(true);
-            const questionsData = await inspectionAPI.getQuestions(sectionId, token);
+            const questionsData = await inspectionAPI.getQuestions(sectionId);
             setQuestions(questionsData);
         } catch (error) {
             console.error('Error loading questions:', error);
@@ -238,7 +238,7 @@ const NewInspection = ({ token }) => {
             }));
 
         if (currentSectionAnswers.length > 0) {
-            await inspectionAPI.submitAnswers(inspectionReportId.toString(), currentSectionAnswers, token);
+            await inspectionAPI.submitAnswers(inspectionReportId.toString(), currentSectionAnswers);
             console.log(`Saved answers for section: ${currentSection.name}`);
         }
     };
@@ -253,7 +253,7 @@ const NewInspection = ({ token }) => {
         try {
             setLoading(true);
 
-            const sectionsData = await inspectionAPI.getSections("B", token);
+            const sectionsData = await inspectionAPI.getSections("B");
 
             if (sectionsData.length === 0) {
                 showWarning('No Part B sections available for this inspection.');

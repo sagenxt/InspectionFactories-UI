@@ -63,13 +63,7 @@ const PhasesGrid = () => {
     useEffect(() => {
         const fetchStatusSummary = async () => {
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    setLoading(false);
-                    return;
-                }
-
-                const data = await inspectionAPI.getApplicationsStatusSummary(token);
+                const data = await inspectionAPI.getApplicationsStatusSummary();
                 setStatusData(data);
             } catch (error) {
                 console.error('Error fetching applications status summary:', error);

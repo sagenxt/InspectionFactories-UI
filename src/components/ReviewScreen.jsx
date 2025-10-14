@@ -5,7 +5,7 @@ import { inspectionAPI } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { getCurrentLocation } from '../utils/location';
 
-const ReviewScreen = ({ token }) => {
+const ReviewScreen = () => {
     const { reportId } = useParams();
     const navigate = useNavigate();
     const { showSuccess, showError } = useToast();
@@ -34,16 +34,16 @@ const ReviewScreen = ({ token }) => {
             setLoading(true);
 
             // Load existing answers to determine which parts were filled
-            const existingAnswers = await inspectionAPI.getAnswers(reportId, token);
+            const existingAnswers = await inspectionAPI.getAnswers(reportId);
 
             // Load Part A sections
-            const partASectionsData = await inspectionAPI.getSections("A", token);
+            const partASectionsData = await inspectionAPI.getSections("A");
             setPartASections(partASectionsData);
 
             // Load Part B sections
             let partBSectionsData = [];
             try {
-                partBSectionsData = await inspectionAPI.getSections("B", token);
+                partBSectionsData = await inspectionAPI.getSections("B");
             } catch (error) {
                 console.warn('Could not load Part B sections:', error);
             }
@@ -104,7 +104,7 @@ const ReviewScreen = ({ token }) => {
 
             // Load Part A questions
             for (const section of partASectionsData) {
-                const questions = await inspectionAPI.getQuestions(section.id, token);
+                const questions = await inspectionAPI.getQuestions(section.id);
                 if (hasPartB) {
                     partAQuestionsBySection[section.id] = questions;
                 } else {
@@ -115,7 +115,7 @@ const ReviewScreen = ({ token }) => {
             // Load Part B questions if needed
             if (hasPartB && partBSectionsData.length > 0) {
                 for (const section of partBSectionsData) {
-                    const questions = await inspectionAPI.getQuestions(section.id, token);
+                    const questions = await inspectionAPI.getQuestions(section.id);
                     questionsBySection[section.id] = questions;
                 }
             }
@@ -150,7 +150,7 @@ const ReviewScreen = ({ token }) => {
             }
 
             // Submit the inspection report with coordinates
-            await inspectionAPI.submitInspectionReport(reportId, coordinates, token);
+            await inspectionAPI.submitInspectionReport(reportId, coordinates);
 
             showSuccess('Inspection submitted successfully! Thank you for completing the inspection.');
 

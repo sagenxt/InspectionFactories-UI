@@ -6,6 +6,7 @@ import MainContent from './components/MainContent';
 import NewInspection from './components/NewInspection';
 import ReviewScreen from './components/ReviewScreen';
 import Applications from './components/Applications';
+import CompletedInspections from './components/CompletedInspections';
 import { ToastProvider } from './contexts/ToastContext';
 
 function App() {
@@ -58,8 +59,9 @@ function App() {
                 <Route index element={<MainContent />} />
                 <Route path="dashboard" element={<MainContent />} />
                 <Route path="applications" element={<Applications />} />
-                <Route path="inspection/:reportId" element={<NewInspection token={localStorage.getItem('token')} />} />
-                <Route path="inspection/:reportId/review" element={<ReviewScreen token={localStorage.getItem('token')} />} />
+                <Route path="completed-inspections" element={<CompletedInspections />} />
+                <Route path="inspection/:reportId" element={<NewInspection />} />
+                <Route path="inspection/:reportId/review" element={<ReviewScreen />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>

@@ -20,9 +20,7 @@ const MainContent = () => {
     const loadActiveReports = useCallback(async (page = 1, limit = 10) => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-
-            const response = await inspectionAPI.getActiveInspectionReports(token, page, limit);
+            const response = await inspectionAPI.getActiveInspectionReports(page, limit);
             // Handle both array response and paginated response
             const reports = Array.isArray(response) ? response : (response?.data || []);
             setActiveReports(reports);

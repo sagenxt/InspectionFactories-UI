@@ -14,10 +14,7 @@ const SummaryCards = () => {
     useEffect(() => {
         const fetchSummary = async () => {
             try {
-                const token = localStorage.getItem('token');
-                if (!token) return;
-
-                const data = await inspectionAPI.getStatusSummary(token);
+                const data = await inspectionAPI.getStatusSummary();
 
                 // Parse status summary to get pending and completed counts
                 const pendingStatus = data.statusSummary.find(s => s.status === 'draft');
