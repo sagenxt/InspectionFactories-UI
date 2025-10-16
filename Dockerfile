@@ -21,6 +21,6 @@ RUN yarn install
 # start app
 RUN yarn build
 
-EXPOSE 80
+EXPOSE 3000
 
-CMD yarn dev
+CMD ["yarn", "dev"]
