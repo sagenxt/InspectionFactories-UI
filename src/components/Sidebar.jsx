@@ -15,7 +15,7 @@ const Sidebar = ({ onLogout, currentPage }) => {
     const menuItems = [
         { icon: Home, label: 'Dashboard', page: 'dashboard', path: '/dashboard' },
         { icon: FileText, label: 'Applications', page: 'applications', path: '/applications' },
-        { icon: CheckCircle, label: 'Completed Inspections', page: 'completed-inspections', path: '/completed-inspections' },
+        { icon: CheckCircle, label: 'Inspections', page: 'completed-inspections', path: '/completed-inspections' },
         // { icon: BarChart3, label: 'Reports', page: 'reports', path: '/reports' },
         // { icon: FolderOpen, label: 'Case Management', page: 'case-management', path: '/case-management' },
         // { icon: Users, label: 'Users', page: 'users', path: '/users' },

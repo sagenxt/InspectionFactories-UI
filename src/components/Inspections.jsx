@@ -12,7 +12,10 @@ import {
     Building,
     MapPin,
     Eye,
-    Send
+    Send,
+    Clock,
+    Edit,
+    Play
 } from 'lucide-react';
 
 const CompletedInspections = () => {
@@ -20,6 +23,7 @@ const CompletedInspections = () => {
     const navigate = useNavigate();
     const [inspections, setInspections] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeFilter, setActiveFilter] = useState('complete');
     const [pagination, setPagination] = useState({
         total: 0,
         page: 1,
@@ -29,10 +33,11 @@ const CompletedInspections = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInspection, setSelectedInspection] = useState(null);
 
-    const loadCompletedInspections = useCallback(async (page = 1, limit = 10) => {
+    const loadInspections = useCallback(async (filter, page = 1, limit = 10) => {
         try {
             setLoading(true);
-            const response = await inspectionAPI.getCompletedInspections(page, limit);
+            const response = await inspectionAPI.getInspectionsByStatus(filter, page, limit);
+
             const reports = response?.reports || [];
             setInspections(reports);
 
@@ -45,8 +50,16 @@ const CompletedInspections = () => {
                 });
             }
         } catch (error) {
-            console.error('Error loading completed inspections:', error);
-            showError('Failed to load completed inspections. Please try again.');
+            console.error(`Error loading ${filter} inspections:`, error);
+            showError(`Failed to load ${filter} inspections. Please try again.`);
+            // Clear inspections and reset pagination on error
+            setInspections([]);
+            setPagination({
+                total: 0,
+                page: 1,
+                limit: 10,
+                totalPages: 1
+            });
         } finally {
             setLoading(false);
         }
@@ -72,7 +85,7 @@ const CompletedInspections = () => {
             showSuccess('Application submitted successfully');
             handleCloseModal();
             // Reload the list to update the UI
-            loadCompletedInspections(pagination.page, pagination.limit);
+            loadInspections(activeFilter, pagination.page, pagination.limit);
         } catch (error) {
             console.error('Error submitting application:', error);
             // Re-throw the error with the original message from backend
@@ -80,14 +93,35 @@ const CompletedInspections = () => {
         }
     };
 
+    const handleResumeInspection = (inspectionId) => {
+        navigate(`/inspection/${inspectionId}`);
+    };
+
+    const handleStartInspection = (inspectionId) => {
+        navigate(`/inspection/${inspectionId}`);
+    };
+
+    const handleFilterChange = (filter) => {
+        setActiveFilter(filter);
+        // Clear previous data immediately when changing filters
+        setInspections([]);
+        setPagination({
+            total: 0,
+            page: 1,
+            limit: pagination.limit,
+            totalPages: 1
+        });
+        loadInspections(filter, 1, pagination.limit);
+    };
+
     useEffect(() => {
-        loadCompletedInspections(pagination.page, pagination.limit);
+        loadInspections(activeFilter, pagination.page, pagination.limit);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handlePageChange = (newPage) => {
         if (newPage >= 1 && newPage <= pagination.totalPages) {
-            loadCompletedInspections(newPage, pagination.limit);
+            loadInspections(activeFilter, newPage, pagination.limit);
         }
     };
 
@@ -115,22 +149,115 @@ const CompletedInspections = () => {
         });
     };
 
+    const getFilterLabel = () => {
+        switch (activeFilter) {
+            case 'complete':
+                return 'Completed';
+            case 'draft':
+                return 'Draft';
+            case 'yetToStart':
+                return 'Yet to Start';
+            default:
+                return 'All';
+        }
+    };
+
+    const getFilterIcon = () => {
+        switch (activeFilter) {
+            case 'complete':
+                return <CheckCircle className="h-8 w-8 text-green-600 mr-3" />;
+            case 'draft':
+                return <Edit className="h-8 w-8 text-yellow-600 mr-3" />;
+            case 'yetToStart':
+                return <Clock className="h-8 w-8 text-gray-600 mr-3" />;
+            default:
+                return <CheckCircle className="h-8 w-8 text-green-600 mr-3" />;
+        }
+    };
+
+    const getStatusBadge = () => {
+        if (activeFilter === 'complete') {
+            return (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-green-50 text-green-700 border-green-200">
+                    <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+                    Complete
+                </span>
+            );
+        } else if (activeFilter === 'draft') {
+            return (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-yellow-50 text-yellow-700 border-yellow-200">
+                    <Edit className="h-3 w-3 mr-1 text-yellow-500" />
+                    Draft
+                </span>
+            );
+        } else if (activeFilter === 'yetToStart') {
+            return (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-gray-50 text-gray-700 border-gray-200">
+                    <Clock className="h-3 w-3 mr-1 text-gray-500" />
+                    Yet to Start
+                </span>
+            );
+        }
+    };
+
     return (
         <div className="flex-1 p-6 overflow-y-auto">
             <div className="mb-6">
                 <div className="flex items-center mb-2">
-                    <CheckCircle className="h-8 w-8 text-green-600 mr-3" />
-                    <h1 className="text-3xl font-bold text-gray-800">Completed Inspections</h1>
+                    {getFilterIcon()}
+                    <h1 className="text-3xl font-bold text-gray-800">Inspections</h1>
                 </div>
-                <p className="text-gray-600">View all inspection reports that have been completed and submitted</p>
+                <p className="text-gray-600">View and manage inspection reports</p>
             </div>
 
-            {/* Completed Inspections List */}
+            {/* Filter Tabs */}
+            <div className="mb-6">
+                <div className="flex space-x-2 border-b border-gray-200">
+                    <button
+                        onClick={() => handleFilterChange('complete')}
+                        className={`px-6 py-3 font-medium transition-colors relative ${activeFilter === 'complete'
+                            ? 'text-green-600 border-b-2 border-green-600'
+                            : 'text-gray-600 hover:text-gray-800'
+                            }`}
+                    >
+                        <div className="flex items-center">
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Completed
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => handleFilterChange('draft')}
+                        className={`px-6 py-3 font-medium transition-colors relative ${activeFilter === 'draft'
+                            ? 'text-yellow-600 border-b-2 border-yellow-600'
+                            : 'text-gray-600 hover:text-gray-800'
+                            }`}
+                    >
+                        <div className="flex items-center">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Draft
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => handleFilterChange('yetToStart')}
+                        className={`px-6 py-3 font-medium transition-colors relative ${activeFilter === 'yetToStart'
+                            ? 'text-gray-800 border-b-2 border-gray-800'
+                            : 'text-gray-600 hover:text-gray-800'
+                            }`}
+                    >
+                        <div className="flex items-center">
+                            <Clock className="h-4 w-4 mr-2" />
+                            Yet to Start
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            {/* Inspections List */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
                     <div className="flex justify-between items-center">
                         <h2 className="text-xl font-bold text-gray-800">
-                            Completed Reports
+                            {getFilterLabel()} Reports
                         </h2>
                         {!loading && (
                             <span className="text-sm text-gray-600">
@@ -146,11 +273,33 @@ const CompletedInspections = () => {
                     </div>
                 ) : inspections.length === 0 ? (
                     <div className="p-12 text-center">
-                        <CheckCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-gray-700 mb-2">No Completed Inspections</h3>
-                        <p className="text-gray-500">
-                            There are no completed inspection reports at the moment.
-                        </p>
+                        {activeFilter === 'complete' && (
+                            <>
+                                <CheckCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Completed Inspections</h3>
+                                <p className="text-gray-500">
+                                    There are no completed inspection reports at the moment.
+                                </p>
+                            </>
+                        )}
+                        {activeFilter === 'draft' && (
+                            <>
+                                <Edit className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Draft Inspections</h3>
+                                <p className="text-gray-500">
+                                    There are no draft inspection reports at the moment.
+                                </p>
+                            </>
+                        )}
+                        {activeFilter === 'yetToStart' && (
+                            <>
+                                <Clock className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Pending Inspections</h3>
+                                <p className="text-gray-500">
+                                    There are no pending inspection reports to start.
+                                </p>
+                            </>
+                        )}
                     </div>
                 ) : (
                     <div className="divide-y divide-gray-200">
@@ -165,10 +314,7 @@ const CompletedInspections = () => {
                                             <h3 className="text-lg font-semibold text-gray-800 mr-3">
                                                 {inspection.factoryName || `Inspection Report #${inspection.id}`}
                                             </h3>
-                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-green-50 text-green-700 border-green-200">
-                                                <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                                                Complete
-                                            </span>
+                                            {getStatusBadge()}
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
@@ -245,20 +391,42 @@ const CompletedInspections = () => {
                                     </div>
 
                                     <div className="ml-4 flex flex-col space-y-2">
-                                        <button
-                                            onClick={() => handleViewInspection(inspection.id)}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
-                                        >
-                                            <Eye className="h-4 w-4 mr-2" />
-                                            View Details
-                                        </button>
-                                        {inspection.applicationNumber === null && (
+                                        {activeFilter === 'complete' && (
+                                            <>
+                                                <button
+                                                    onClick={() => handleViewInspection(inspection.id)}
+                                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
+                                                >
+                                                    <Eye className="h-4 w-4 mr-2" />
+                                                    View Details
+                                                </button>
+                                                {inspection.applicationNumber === null && (
+                                                    <button
+                                                        onClick={() => handleSubmitInspection(inspection)}
+                                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
+                                                    >
+                                                        <Send className="h-4 w-4 mr-2" />
+                                                        Submit Application
+                                                    </button>
+                                                )}
+                                            </>
+                                        )}
+                                        {activeFilter === 'draft' && (
                                             <button
-                                                onClick={() => handleSubmitInspection(inspection)}
-                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
+                                                onClick={() => handleResumeInspection(inspection.id)}
+                                                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
                                             >
-                                                <Send className="h-4 w-4 mr-2" />
-                                                Submit Application
+                                                <Edit className="h-4 w-4 mr-2" />
+                                                Resume
+                                            </button>
+                                        )}
+                                        {activeFilter === 'yetToStart' && (
+                                            <button
+                                                onClick={() => handleStartInspection(inspection.id)}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
+                                            >
+                                                <Play className="h-4 w-4 mr-2" />
+                                                Start
                                             </button>
                                         )}
                                     </div>

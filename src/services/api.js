@@ -354,11 +354,11 @@ export const inspectionAPI = {
     }
   },
 
-  getCompletedInspections: async (page = 1, limit = 10) => {
+  getInspectionsByStatus: async (status, page = 1, limit = 10) => {
     try {
       const token = getToken();
       const response = await fetch(
-        `${API_BASE_URL}/inspection-reports/filter?status=complete&page=${page}&limit=${limit}`,
+        `${API_BASE_URL}/inspection-reports/filter?status=${status}&page=${page}&limit=${limit}`,
         {
           method: "GET",
           headers: {
@@ -375,7 +375,7 @@ export const inspectionAPI = {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("Get completed inspections error:", error);
+      console.error(`Get ${status} inspections error:`, error);
       throw error;
     }
   },

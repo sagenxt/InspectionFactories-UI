@@ -146,10 +146,11 @@ const MainContent = () => {
                                         {report.status.toLowerCase() === 'pending' && 'Ready to start inspection'}
                                         {report.status.toLowerCase() === 'draft' && 'Draft inspection - resume where you left off'}
                                         {report.status.toLowerCase() === 'in_progress' && 'Inspection in progress'}
-                                        {report.status.toLowerCase() === 'completed' && 'Inspection completed'}
+                                        {report.status.toLowerCase() === 'complete' && 'Inspection completed'}
+                                        {report.status.toLowerCase() === 'yettostart' && 'Ready to start inspection'}
                                     </div>
 
-                                    {report.status.toLowerCase() === 'pending' && (
+                                    {report.status.toLowerCase() === 'yettostart' && (
                                         <button
                                             onClick={() => handleStartInspection(report.id)}
                                             className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2"
@@ -159,7 +160,7 @@ const MainContent = () => {
                                         </button>
                                     )}
 
-                                    {(report.status.toLowerCase() === 'draft' || report.status.toLowerCase() === 'in_progress') && (
+                                    {(report.status.toLowerCase() === 'draft') && (
                                         <button
                                             onClick={() => handleStartInspection(report.id)}
                                             className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center space-x-2"

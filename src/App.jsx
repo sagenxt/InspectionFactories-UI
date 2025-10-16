@@ -6,7 +6,7 @@ import MainContent from './components/MainContent';
 import NewInspection from './components/NewInspection';
 import ReviewScreen from './components/ReviewScreen';
 import Applications from './components/Applications';
-import CompletedInspections from './components/CompletedInspections';
+import CompletedInspections from './components/Inspections';
 import { ToastProvider } from './contexts/ToastContext';
 
 function App() {

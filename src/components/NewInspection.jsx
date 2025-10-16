@@ -8,7 +8,7 @@ import SubmissionModal from './SubmissionModal';
 const NewInspection = () => {
     const { reportId } = useParams();
     const navigate = useNavigate();
-    const { showSuccess, showError, showWarning, showInfo } = useToast();
+    const { showSuccess, showError, showWarning } = useToast();
     const [sections, setSections] = useState([]);
     const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
     const [questions, setQuestions] = useState([]);
@@ -21,6 +21,10 @@ const NewInspection = () => {
     const [isPartB, setIsPartB] = useState(false);
     const [partBSections, setPartBSections] = useState([]);
     const [partBAnswers, setPartBAnswers] = useState({});
+    const [validationErrors, setValidationErrors] = useState({
+        missingAnswers: [],
+        missingNotes: []
+    });
 
     useEffect(() => {
         if (reportId) {
@@ -148,13 +152,20 @@ const NewInspection = () => {
     };
 
     const handleAnswerChange = (questionId, value) => {
+        // Clear validation errors for this question
+        setValidationErrors(prev => ({
+            missingAnswers: prev.missingAnswers.filter(id => id !== questionId),
+            missingNotes: value === 'NA' ? prev.missingNotes.filter(id => id !== questionId) : prev.missingNotes
+        }));
+
         if (isPartB) {
             setPartBAnswers(prev => ({
                 ...prev,
                 [questionId]: {
                     ...prev[questionId],
                     value,
-                    notes: prev[questionId]?.notes || ''
+                    // Clear notes if NA is selected
+                    notes: value === 'NA' ? '' : (prev[questionId]?.notes || '')
                 }
             }));
         } else {
@@ -163,13 +174,22 @@ const NewInspection = () => {
                 [questionId]: {
                     ...prev[questionId],
                     value,
-                    notes: prev[questionId]?.notes || ''
+                    // Clear notes if NA is selected
+                    notes: value === 'NA' ? '' : (prev[questionId]?.notes || '')
                 }
             }));
         }
     };
 
     const handleNotesChange = (questionId, notes) => {
+        // Clear validation error for notes if user starts typing
+        if (notes.trim() !== '') {
+            setValidationErrors(prev => ({
+                ...prev,
+                missingNotes: prev.missingNotes.filter(id => id !== questionId)
+            }));
+        }
+
         if (isPartB) {
             setPartBAnswers(prev => ({
                 ...prev,
@@ -196,10 +216,33 @@ const NewInspection = () => {
         const currentAnswers = isPartB ? partBAnswers : answers;
         const unansweredQuestions = questions.filter(question => !currentAnswers[question.id]?.value);
 
-        if (unansweredQuestions.length > 0) {
-            showWarning(`Please answer all questions before proceeding. ${unansweredQuestions.length} question(s) remaining.`);
+        // Check if notes are filled for Yes/No answers
+        const questionsNeedingNotes = questions.filter(question => {
+            const answer = currentAnswers[question.id];
+            return answer?.value && (answer.value === 'Yes' || answer.value === 'No') && (!answer.notes || answer.notes.trim() === '');
+        });
+
+        if (unansweredQuestions.length > 0 || questionsNeedingNotes.length > 0) {
+            setValidationErrors({
+                missingAnswers: unansweredQuestions.map(q => q.id),
+                missingNotes: questionsNeedingNotes.map(q => q.id)
+            });
+
+            // Scroll to first error
+            const firstErrorId = unansweredQuestions.length > 0
+                ? unansweredQuestions[0].id
+                : questionsNeedingNotes[0].id;
+
+            const element = document.getElementById(`question-${firstErrorId}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
             return;
         }
+
+        // Clear validation errors
+        setValidationErrors({ missingAnswers: [], missingNotes: [] });
 
         // Save current section answers before moving to next section
         setSaving(true);
@@ -210,6 +253,8 @@ const NewInspection = () => {
 
             if (currentSectionIndex < currentSections.length - 1) {
                 setCurrentSectionIndex(prev => prev + 1);
+                // Clear validation errors for next section
+                setValidationErrors({ missingAnswers: [], missingNotes: [] });
             }
         } catch (error) {
             console.error('Error saving section:', error);
@@ -220,9 +265,16 @@ const NewInspection = () => {
     };
 
     const saveCurrentSectionAnswers = async () => {
-        if (!currentSection || !inspectionReportId) return;
+        if (!currentSection || !inspectionReportId) {
+            console.warn('Cannot save: missing currentSection or inspectionReportId');
+            return;
+        }
 
         const currentAnswers = isPartB ? partBAnswers : answers;
+
+        console.log(`Saving ${isPartB ? 'Part B' : 'Part A'} section: ${currentSection.name}`);
+        console.log('Current answers:', currentAnswers);
+        console.log('Current questions:', questions);
 
         // Get answers for current section only
         const currentSectionAnswers = Object.entries(currentAnswers)
@@ -237,15 +289,21 @@ const NewInspection = () => {
                 notes: answer.notes || ''
             }));
 
+        console.log(`Filtered ${currentSectionAnswers.length} answers for section ${currentSection.id}`);
+
         if (currentSectionAnswers.length > 0) {
             await inspectionAPI.submitAnswers(inspectionReportId.toString(), currentSectionAnswers);
-            console.log(`Saved answers for section: ${currentSection.name}`);
+            console.log(`✓ Successfully saved ${currentSectionAnswers.length} answers for ${isPartB ? 'Part B' : 'Part A'} section: ${currentSection.name}`);
+        } else {
+            console.warn(`No answers to save for section: ${currentSection.name}`);
         }
     };
 
     const prevSection = () => {
         if (currentSectionIndex > 0) {
             setCurrentSectionIndex(prev => prev - 1);
+            // Clear validation errors when changing sections
+            setValidationErrors({ missingAnswers: [], missingNotes: [] });
         }
     };
 
@@ -288,27 +346,57 @@ const NewInspection = () => {
     };
 
     const handleSubmitClick = async () => {
+        console.log(`=== handleSubmitClick called for ${isPartB ? 'Part B' : 'Part A'} ===`);
+
         // Check if all questions are answered
-        const currentQuestions = isPartB ? questions : questions;
+        const currentQuestions = questions;
         const currentAnswers = isPartB ? partBAnswers : answers;
         const unansweredQuestions = currentQuestions.filter(question => !currentAnswers[question.id]?.value);
 
-        if (unansweredQuestions.length > 0) {
-            showWarning(`Please answer all questions before submitting. ${unansweredQuestions.length} question(s) remaining.`);
+        console.log(`Total questions: ${currentQuestions.length}, Unanswered: ${unansweredQuestions.length}`);
+
+        // Check if notes are filled for Yes/No answers
+        const questionsNeedingNotes = currentQuestions.filter(question => {
+            const answer = currentAnswers[question.id];
+            return answer?.value && (answer.value === 'Yes' || answer.value === 'No') && (!answer.notes || answer.notes.trim() === '');
+        });
+
+        if (unansweredQuestions.length > 0 || questionsNeedingNotes.length > 0) {
+            setValidationErrors({
+                missingAnswers: unansweredQuestions.map(q => q.id),
+                missingNotes: questionsNeedingNotes.map(q => q.id)
+            });
+
+            // Scroll to first error
+            const firstErrorId = unansweredQuestions.length > 0
+                ? unansweredQuestions[0].id
+                : questionsNeedingNotes[0].id;
+
+            const element = document.getElementById(`question-${firstErrorId}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
             return;
         }
+
+        // Clear validation errors
+        setValidationErrors({ missingAnswers: [], missingNotes: [] });
 
         // Save current section answers BEFORE going to review
         setSaving(true);
 
         try {
+            console.log('Calling saveCurrentSectionAnswers...');
             await saveCurrentSectionAnswers();
             showSuccess('All sections saved successfully!');
 
             if (isPartB) {
+                console.log('Part B complete - navigating to review screen');
                 // For Part B, navigate to review screen
                 navigate(`/inspection/${reportId}/review`);
             } else {
+                console.log('Part A complete - showing submission modal');
                 // For Part A, show modal to ask about Part B
                 setShowSubmissionModal(true);
             }
@@ -418,55 +506,87 @@ const NewInspection = () => {
                     </h2>
 
                     <div className="space-y-6">
-                        {questions.map((question) => (
-                            <div key={question.id} className="border-b border-gray-200 pb-6 last:border-b-0">
-                                <div className="flex items-start space-x-3 mb-4">
-                                    <div className="flex-shrink-0">
-                                        <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">
-                                            {question.id}
-                                        </span>
-                                    </div>
-                                    <h3 className="text-lg font-medium text-gray-700 flex-1">
-                                        {question.text}
-                                    </h3>
-                                </div>
+                        {questions.map((question) => {
+                            const hasAnswerError = validationErrors.missingAnswers.includes(question.id);
+                            const hasNotesError = validationErrors.missingNotes.includes(question.id);
+                            const currentAnswer = isPartB ? partBAnswers[question.id]?.value : answers[question.id]?.value;
 
-                                <div className="space-y-3">
-                                    <div className="flex space-x-6">
-                                        {['Yes', 'No', 'N/A'].map((option) => (
-                                            <label key={option} className="flex items-center">
-                                                <input
-                                                    type="radio"
-                                                    name={`question-${question.id}`}
-                                                    value={option}
-                                                    checked={(isPartB ? partBAnswers[question.id]?.value : answers[question.id]?.value) === option}
-                                                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                                />
-                                                <span className="ml-2 text-sm font-medium text-gray-700">
-                                                    {option}
-                                                </span>
-                                            </label>
-                                        ))}
-                                    </div>
-
-                                    {((isPartB ? partBAnswers[question.id]?.value : answers[question.id]?.value) === 'Yes' || (isPartB ? partBAnswers[question.id]?.value : answers[question.id]?.value) === 'No') && (
-                                        <div className="mt-4">
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Notes
-                                            </label>
-                                            <textarea
-                                                value={(isPartB ? partBAnswers[question.id]?.notes : answers[question.id]?.notes) || ''}
-                                                onChange={(e) => handleNotesChange(question.id, e.target.value)}
-                                                placeholder="Enter your notes here..."
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                                rows={3}
-                                            />
+                            return (
+                                <div
+                                    key={question.id}
+                                    id={`question-${question.id}`}
+                                    className={`border-b border-gray-200 pb-6 last:border-b-0 rounded-lg p-4 transition-colors ${hasAnswerError || hasNotesError ? 'bg-red-50 border-red-300' : ''
+                                        }`}
+                                >
+                                    <div className="flex items-start space-x-3 mb-4">
+                                        <div className="flex-shrink-0">
+                                            <span className={`inline-flex items-center justify-center w-8 h-8 text-sm font-semibold rounded-full ${hasAnswerError || hasNotesError
+                                                ? 'bg-red-100 text-red-800'
+                                                : 'bg-blue-100 text-blue-800'
+                                                }`}>
+                                                {question.id}
+                                            </span>
                                         </div>
-                                    )}
+                                        <h3 className="text-lg font-medium text-gray-700 flex-1">
+                                            {question.text}
+                                        </h3>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div>
+                                            <div className="flex space-x-6">
+                                                {['Yes', 'No', 'NA'].map((option) => (
+                                                    <label key={option} className="flex items-center">
+                                                        <input
+                                                            type="radio"
+                                                            name={`question-${question.id}`}
+                                                            value={option}
+                                                            checked={currentAnswer === option}
+                                                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                                        />
+                                                        <span className="ml-2 text-sm font-medium text-gray-700">
+                                                            {option}
+                                                        </span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                            {hasAnswerError && (
+                                                <p className="mt-2 text-sm text-red-600 flex items-center">
+                                                    <AlertCircle className="h-4 w-4 mr-1" />
+                                                    Please select an answer
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {(currentAnswer === 'Yes' || currentAnswer === 'No') && (
+                                            <div className="mt-4">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Notes <span className="text-red-500">*</span>
+                                                </label>
+                                                <textarea
+                                                    value={(isPartB ? partBAnswers[question.id]?.notes : answers[question.id]?.notes) || ''}
+                                                    onChange={(e) => handleNotesChange(question.id, e.target.value)}
+                                                    placeholder="Enter your notes here... (Required)"
+                                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 transition-colors ${hasNotesError
+                                                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                                                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                                                        }`}
+                                                    rows={3}
+                                                    required
+                                                />
+                                                {hasNotesError && (
+                                                    <p className="mt-2 text-sm text-red-600 flex items-center">
+                                                        <AlertCircle className="h-4 w-4 mr-1" />
+                                                        Notes are required for Yes/No answers
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
