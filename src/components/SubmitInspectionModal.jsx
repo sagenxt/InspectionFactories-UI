@@ -78,7 +78,7 @@ const SubmitInspectionModal = ({ isOpen, onClose, inspection, onSubmit }) => {
                         </div>
 
                         <label htmlFor="externalId" className="block text-sm font-medium text-gray-700 mb-2">
-                            Application ID (External ID) <span className="text-red-500">*</span>
+                            e-Office ID <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
