@@ -8,6 +8,7 @@ import ReviewScreen from './components/ReviewScreen';
 import Applications from './components/Applications';
 import CompletedInspections from './components/Inspections';
 import { ToastProvider } from './contexts/ToastContext';
+import InstallPWAToast from './components/InstallPWAToast';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -68,6 +69,7 @@ function App() {
           ) : (
             <LoginForm onLogin={handleLogin} />
           )}
+          <InstallPWAToast />
         </div>
       </BrowserRouter>
     </ToastProvider>
