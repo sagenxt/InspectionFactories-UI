@@ -7,14 +7,16 @@ const InstallPWAToast = () => {
     useEffect(() => {
         console.log("🎯 InstallPWAToast mounted");
 
-        // Check if already in standalone mode
+        // Check if already in standalone mode (app is installed)
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
             window.navigator.standalone === true;
-        console.log("📱 Is Standalone:", isStandalone);
+        console.log("📱 Is Standalone (installed):", isStandalone);
 
-        // Force show toast for testing (remove this later)
-        console.log("✅ Setting showToast to TRUE for testing");
-        setShowToast(true);
+        // Don't show toast if app is already installed
+        if (isStandalone) {
+            console.log("⛔ App is installed, not showing install prompt");
+            return;
+        }
 
         const handler = (e) => {
             console.log("🚀 beforeinstallprompt event fired!");
