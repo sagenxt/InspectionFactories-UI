@@ -248,7 +248,7 @@ const NewInspection = () => {
         setSaving(true);
 
         try {
-            await saveCurrentSectionAnswers();
+            await saveCurrentSectionAnswersWithRetry();
             showSuccess(`Section "${currentSection?.name}" saved successfully!`);
 
             if (currentSectionIndex < currentSections.length - 1) {
@@ -257,8 +257,8 @@ const NewInspection = () => {
                 setValidationErrors({ missingAnswers: [], missingNotes: [] });
             }
         } catch (error) {
-            console.error('Error saving section:', error);
-            showError('Failed to save section. Please try again.');
+            console.error('Error saving section after retries:', error);
+            showError('Failed to save section after multiple attempts. Please check your connection and try again.');
         } finally {
             setSaving(false);
         }
@@ -297,6 +297,37 @@ const NewInspection = () => {
         } else {
             console.warn(`No answers to save for section: ${currentSection.name}`);
         }
+    };
+
+    const saveCurrentSectionAnswersWithRetry = async (maxRetries = 3, delay = 1000) => {
+        let lastError;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`Save attempt ${attempt}/${maxRetries} for section: ${currentSection?.name}`);
+                await saveCurrentSectionAnswers();
+                console.log(`✓ Save successful on attempt ${attempt}`);
+                return; // Success, exit retry loop
+            } catch (error) {
+                lastError = error;
+                console.warn(`Save attempt ${attempt} failed:`, error.message);
+
+                if (attempt < maxRetries) {
+                    console.log(`Retrying in ${delay}ms...`);
+                    // Show user feedback for retry attempts
+                    if (attempt === 1) {
+                        showWarning(`Save failed, retrying... (attempt ${attempt + 1}/${maxRetries})`);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    // Exponential backoff for subsequent retries
+                    delay *= 1.5;
+                }
+            }
+        }
+
+        // All retries failed
+        console.error(`All ${maxRetries} save attempts failed`);
+        throw lastError;
     };
 
     const prevSection = () => {
@@ -383,14 +414,16 @@ const NewInspection = () => {
         // Clear validation errors
         setValidationErrors({ missingAnswers: [], missingNotes: [] });
 
-        // Save current section answers BEFORE going to review
+        // Save current section answers BEFORE going to review with retry mechanism
         setSaving(true);
 
         try {
-            console.log('Calling saveCurrentSectionAnswers...');
-            await saveCurrentSectionAnswers();
+            console.log('Calling saveCurrentSectionAnswers with retry mechanism...');
+            await saveCurrentSectionAnswersWithRetry();
+            console.log('✓ Final section saved successfully!');
             showSuccess('All sections saved successfully!');
 
+            // Only proceed with navigation after successful save
             if (isPartB) {
                 console.log('Part B complete - navigating to review screen');
                 // For Part B, navigate to review screen
@@ -401,8 +434,9 @@ const NewInspection = () => {
                 setShowSubmissionModal(true);
             }
         } catch (error) {
-            console.error('Error saving final section:', error);
-            showError('Failed to save section. Please try again.');
+            console.error('Error saving final section after retries:', error);
+            showError('Failed to save section after multiple attempts. Please check your connection and try again.');
+            // Don't proceed with navigation if save fails
         } finally {
             setSaving(false);
         }

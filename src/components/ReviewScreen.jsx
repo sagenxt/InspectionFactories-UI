@@ -76,14 +76,15 @@ const ReviewScreen = () => {
             });
 
             setPartAAnswers(partAAnswersData);
-            setAnswers(partBAnswersData);
             setIsPartB(hasPartBAnswers);
 
-            // Set the appropriate sections based on whether Part B was filled
+            // Set the appropriate sections and answers based on whether Part B was filled
             if (hasPartBAnswers) {
                 setSections(partBSectionsData);
+                setAnswers(partBAnswersData);
             } else {
                 setSections(partASectionsData);
+                setAnswers(partAAnswersData);
             }
 
             // Load questions for all sections
