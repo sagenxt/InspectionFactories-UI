@@ -262,28 +262,35 @@ const Applications = () => {
     };
 
     return (
-        <div className="flex-1 p-6 overflow-y-auto">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Applications</h1>
-                <p className="text-gray-600">View and manage factory inspection applications across different phases</p>
+        <div className="flex-1 p-0 sm:p-6 overflow-y-auto">
+            <div className="mb-6 p-4 sm:p-0">
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 mb-2">Applications</h1>
+                <p className="text-sm lg:text-base text-gray-600">View and manage factory inspection applications across different phases</p>
             </div>
 
             {/* Phase Filters */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-                <div className="flex items-center mb-4">
-                    <Filter className="h-5 w-5 text-gray-600 mr-2" />
-                    <h2 className="text-lg font-semibold text-gray-800">Filter by Phase</h2>
+            <div className="bg-white rounded-none sm:rounded-xl shadow-sm border-0 sm:border border-gray-200 p-4 sm:p-6 mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center mb-6 gap-3">
+                    <div className="flex items-center">
+                        <div className="p-2 bg-blue-50 rounded-lg mr-3">
+                            <Filter className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-semibold text-gray-800">Filter by Phase</h2>
+                            <p className="text-sm text-gray-500">Select a phase to filter applications</p>
+                        </div>
+                    </div>
                     {selectedPhase && (
                         <button
                             onClick={() => setSelectedPhase(null)}
-                            className="ml-auto text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors self-start sm:ml-auto"
                         >
-                            <X className="h-4 w-4 mr-1" />
+                            <X className="h-4 w-4 mr-2" />
                             Clear Filter
                         </button>
                     )}
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 lg:gap-4">
                     {phases.map((phase) => {
                         const Icon = phase.icon;
                         const isSelected = selectedPhase === phase.name;
@@ -291,15 +298,25 @@ const Applications = () => {
                             <button
                                 key={phase.name}
                                 onClick={() => handlePhaseFilter(phase.name)}
-                                className={`p-4 rounded-lg border-2 transition-all duration-200 ${isSelected
-                                    ? `${phase.bgColor} ${phase.borderColor} shadow-md scale-105`
-                                    : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                                className={`group relative p-3 lg:p-5 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 active:scale-95 ${isSelected
+                                    ? `${phase.bgColor} ${phase.borderColor} shadow-lg scale-105 ring-2 ring-offset-2 ${phase.borderColor.replace('border-', 'ring-')}`
+                                    : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-md hover:bg-gray-50'
                                     }`}
                             >
-                                <Icon className={`h-6 w-6 mx-auto mb-2 ${isSelected ? phase.iconColor : 'text-gray-400'}`} />
-                                <p className={`text-xs font-medium text-center ${isSelected ? phase.textColor : 'text-gray-600'}`}>
-                                    {phase.name}
-                                </p>
+                                <div className="flex flex-col items-center text-center">
+                                    <div className={`p-2 lg:p-3 rounded-full mb-2 lg:mb-3 transition-colors duration-300 ${isSelected
+                                        ? `${phase.bgColor} shadow-md`
+                                        : 'bg-gray-100 group-hover:bg-gray-200'
+                                        }`}>
+                                        <Icon className={`h-5 w-5 lg:h-7 lg:w-7 transition-colors duration-300 ${isSelected ? phase.iconColor : 'text-gray-500 group-hover:text-gray-700'}`} />
+                                    </div>
+                                    <p className={`text-xs font-semibold leading-tight transition-colors duration-300 ${isSelected ? phase.textColor : 'text-gray-700 group-hover:text-gray-900'}`}>
+                                        {phase.name}
+                                    </p>
+                                </div>
+                                {isSelected && (
+                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+                                )}
                             </button>
                         );
                     })}
@@ -307,10 +324,10 @@ const Applications = () => {
             </div>
 
             {/* Applications List */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-bold text-gray-800">
+            <div className="bg-white rounded-none sm:rounded-lg shadow-sm border-0 sm:border border-gray-200">
+                <div className="p-4 lg:p-6 border-b border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                        <h2 className="text-lg lg:text-xl font-bold text-gray-800">
                             {selectedPhase ? `${selectedPhase} Applications` : 'All Applications'}
                         </h2>
                         {!loading && (
@@ -343,20 +360,23 @@ const Applications = () => {
                             return (
                                 <div
                                     key={app.id}
-                                    className="p-6 hover:bg-gray-50 transition-colors duration-150"
+                                    className={`p-4 lg:p-6 transition-colors duration-150 relative ${expandedApplications[app.id]
+                                        ? 'bg-blue-50 border-l-4 border-blue-500 shadow-md'
+                                        : 'hover:bg-gray-50'
+                                        }`}
                                 >
-                                    <div className="flex items-start justify-between">
+                                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                                         <div className="flex-1">
-                                            <div className="flex items-center mb-3">
-                                                <h3 className="text-lg font-semibold text-gray-800 mr-3">
+                                            <div className="flex flex-col sm:flex-row sm:items-center mb-3 gap-2">
+                                                <h3 className="text-base lg:text-lg font-semibold text-gray-800">
                                                     Application #{app.externalId}
                                                 </h3>
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${phaseConfig.bgColor} ${phaseConfig.textColor} ${phaseConfig.borderColor}`}>
+                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border w-fit ${phaseConfig.bgColor} ${phaseConfig.textColor} ${phaseConfig.borderColor}`}>
                                                     <Icon className={`h-3 w-3 mr-1 ${phaseConfig.iconColor}`} />
                                                     {app.currentStatus}
                                                 </span>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-gray-600">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-600">
                                                 <div>
                                                     <span className="font-medium text-gray-700">Internal ID:</span>
                                                     <span className="ml-2">{app.id}</span>
@@ -389,61 +409,68 @@ const Applications = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="ml-4 flex space-x-2">
+                                        <div className="flex flex-col sm:flex-row gap-2 lg:ml-4">
                                             <button
                                                 onClick={() => toggleExpandApplication(app.id)}
-                                                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
+                                                className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center text-sm font-medium"
                                             >
                                                 {expandedApplications[app.id] ? (
                                                     <>
-                                                        <ChevronUp className="h-4 w-4 mr-2" />
-                                                        Hide History
+                                                        <ChevronUp className="h-4 w-4 mr-1 sm:mr-2" />
+                                                        <span className="hidden sm:inline">Hide History</span>
+                                                        <span className="sm:hidden">Hide</span>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <ChevronDown className="h-4 w-4 mr-2" />
-                                                        Show History
+                                                        <ChevronDown className="h-4 w-4 mr-1 sm:mr-2" />
+                                                        <span className="hidden sm:inline">Show History</span>
+                                                        <span className="sm:hidden">Show</span>
                                                     </>
                                                 )}
                                             </button>
                                             <button
                                                 onClick={() => handleDownloadReport(app.inspectionReportId)}
-                                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
+                                                className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center text-sm font-medium"
                                             >
-                                                <Download className="h-4 w-4 mr-2" />
-                                                Download PDF
+                                                <Download className="h-4 w-4 mr-1 sm:mr-2" />
+                                                <span className="hidden sm:inline">Download PDF</span>
+                                                <span className="sm:hidden">PDF</span>
                                             </button>
                                             <button
                                                 onClick={() => handleUpdateStatus(app)}
-                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm font-medium whitespace-nowrap"
+                                                className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center text-sm font-medium"
                                             >
-                                                <Edit className="h-4 w-4 mr-2" />
-                                                Update Status
+                                                <Edit className="h-4 w-4 mr-1 sm:mr-2" />
+                                                <span className="hidden sm:inline">Update Status</span>
+                                                <span className="sm:hidden">Update</span>
                                             </button>
                                         </div>
                                     </div>
 
                                     {/* Status History Section */}
                                     {expandedApplications[app.id] && (
-                                        <div className="mt-4 pt-4 border-t border-gray-200">
+                                        <div className="absolute top-full left-0 right-0 z-10 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 max-h-80 overflow-hidden">
                                             {loadingHistory[app.id] ? (
                                                 <div className="flex items-center justify-center py-4">
                                                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                                                 </div>
                                             ) : statusHistory[app.id] && statusHistory[app.id].length > 0 ? (
-                                                <div>
-                                                    <h4 className="text-md font-semibold text-gray-800 mb-3">Status History</h4>
-                                                    <div className="overflow-x-auto">
+                                                <div className="h-full flex flex-col">
+                                                    <div className="flex items-center mb-3 flex-shrink-0 p-4 border-b border-gray-200">
+                                                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                                                        <h4 className="text-md font-semibold text-gray-800">Status History for Application #{app.externalId}</h4>
+                                                    </div>
+                                                    <div className="flex-1 overflow-x-auto overflow-y-auto p-4">
                                                         <table className="min-w-full divide-y divide-gray-200">
                                                             <thead className="bg-gray-50">
                                                                 <tr>
-                                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                    <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                         Status
                                                                     </th>
-                                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                    <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                         Comment
                                                                     </th>
-                                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                                    <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                         Created At
                                                                     </th>
                                                                 </tr>
@@ -454,25 +481,25 @@ const Applications = () => {
                                                                     const needsViewMore = wordCount > 6;
                                                                     return (
                                                                         <tr key={history.id}>
-                                                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                                            <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                                                 {history.status}
                                                                             </td>
-                                                                            <td className="px-6 py-4 text-sm text-gray-700">
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <span className="truncate max-w-md">
+                                                                            <td className="px-3 lg:px-6 py-4 text-sm text-gray-700">
+                                                                                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                                                                    <span className="truncate max-w-xs sm:max-w-md">
                                                                                         {needsViewMore ? truncateComment(history.comment) : history.comment}
                                                                                     </span>
                                                                                     {needsViewMore && (
                                                                                         <button
                                                                                             onClick={() => handleViewComment(history.comment, history.status)}
-                                                                                            className="text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+                                                                                            className="text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap text-left sm:text-center"
                                                                                         >
                                                                                             View More
                                                                                         </button>
                                                                                     )}
                                                                                 </div>
                                                                             </td>
-                                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                                            <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                                                                                 {new Date(history.createdAt).toLocaleDateString('en-US', {
                                                                                     year: 'numeric',
                                                                                     month: 'short',
@@ -489,7 +516,12 @@ const Applications = () => {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <p className="text-sm text-gray-500">No status history available.</p>
+                                                <div className="flex items-center justify-center h-full p-4">
+                                                    <div className="flex items-center">
+                                                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                                                        <p className="text-sm text-gray-500">No status history available for Application #{app.externalId}</p>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
                                     )}
@@ -501,31 +533,33 @@ const Applications = () => {
 
                 {/* Pagination */}
                 {!loading && applications.length > 0 && pagination.total > pagination.limit && (
-                    <div className="p-6 border-t border-gray-200 flex justify-between items-center">
-                        <div className="text-sm text-gray-600">
-                            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-sm text-gray-500">
-                                Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
-                            </span>
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={() => handlePageChange(pagination.page - 1)}
-                                    disabled={pagination.page === 1}
-                                    className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    title="Previous page"
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                </button>
-                                <button
-                                    onClick={() => handlePageChange(pagination.page + 1)}
-                                    disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
-                                    className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    title="Next page"
-                                >
-                                    <ChevronRight className="h-4 w-4" />
-                                </button>
+                    <div className="p-4 lg:p-6 border-t border-gray-200">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                            <div className="text-sm text-gray-600 text-center sm:text-left">
+                                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                <span className="text-sm text-gray-500 text-center sm:text-left">
+                                    Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
+                                </span>
+                                <div className="flex justify-center space-x-2">
+                                    <button
+                                        onClick={() => handlePageChange(pagination.page - 1)}
+                                        disabled={pagination.page === 1}
+                                        className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        title="Previous page"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handlePageChange(pagination.page + 1)}
+                                        disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
+                                        className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        title="Next page"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -544,9 +578,9 @@ const Applications = () => {
             {/* Comment View Modal */}
             {commentModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-                        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                            <h3 className="text-xl font-bold text-gray-800">Status Comment</h3>
+                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                        <div className="p-4 lg:p-6 border-b border-gray-200 flex items-center justify-between">
+                            <h3 className="text-lg lg:text-xl font-bold text-gray-800">Status Comment</h3>
                             <button
                                 onClick={handleCloseCommentModal}
                                 className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -554,21 +588,21 @@ const Applications = () => {
                                 <X className="h-6 w-6" />
                             </button>
                         </div>
-                        <div className="p-6 overflow-y-auto max-h-[60vh]">
-                            <div className="mb-6 pb-4 border-b border-gray-200">
+                        <div className="p-4 lg:p-6 overflow-y-auto max-h-[60vh]">
+                            <div className="mb-4 lg:mb-6 pb-4 border-b border-gray-200">
                                 <label className="text-sm font-semibold text-blue-600 uppercase tracking-wide">Status</label>
-                                <p className="mt-1 text-lg font-medium text-gray-900">
+                                <p className="mt-1 text-base lg:text-lg font-medium text-gray-900">
                                     {selectedComment.status}
                                 </p>
                             </div>
                             <div>
                                 <label className="text-sm font-semibold text-green-600 uppercase tracking-wide">Comment</label>
-                                <p className="mt-2 text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                <p className="mt-2 text-sm lg:text-base text-gray-700 whitespace-pre-wrap leading-relaxed">
                                     {selectedComment.comment}
                                 </p>
                             </div>
                         </div>
-                        <div className="p-6 border-t border-gray-200 flex justify-end">
+                        <div className="p-4 lg:p-6 border-t border-gray-200 flex justify-end">
                             <button
                                 onClick={handleCloseCommentModal}
                                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"

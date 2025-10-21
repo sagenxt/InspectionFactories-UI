@@ -8,10 +8,11 @@ import {
     Users,
     Settings,
     LogOut,
-    CheckCircle
+    CheckCircle,
+    X
 } from 'lucide-react';
 
-const Sidebar = ({ onLogout, currentPage }) => {
+const Sidebar = ({ onLogout, currentPage, onMobileMenuClose }) => {
     const menuItems = [
         { icon: Home, label: 'Dashboard', page: 'dashboard', path: '/dashboard' },
         { icon: FileText, label: 'Applications', page: 'applications', path: '/applications' },
@@ -22,10 +23,24 @@ const Sidebar = ({ onLogout, currentPage }) => {
         // { icon: Settings, label: 'Settings', page: 'settings', path: '/settings' },
     ];
 
+    const handleLinkClick = () => {
+        // Close mobile menu when a link is clicked
+        if (onMobileMenuClose) {
+            onMobileMenuClose();
+        }
+    };
+
     return (
         <div className="w-64 bg-white shadow-lg h-screen flex flex-col">
-            <div className="p-6 border-b border-gray-200">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-800">Factory Inspector</h2>
+                {/* Mobile close button */}
+                <button
+                    onClick={onMobileMenuClose}
+                    className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
+                >
+                    <X size={20} className="text-gray-600" />
+                </button>
             </div>
 
             <div className="flex-1 p-4">
@@ -38,6 +53,7 @@ const Sidebar = ({ onLogout, currentPage }) => {
                             <Link
                                 key={index}
                                 to={item.path}
+                                onClick={handleLinkClick}
                                 className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${isActive
                                     ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
                                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
