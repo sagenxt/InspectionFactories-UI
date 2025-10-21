@@ -37,22 +37,36 @@ const NewInspection = () => {
     }, [reportId]);
 
     useEffect(() => {
-        if (sections.length > 0) {
-            loadQuestions(sections[currentSectionIndex].id);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sections, currentSectionIndex]);
+        console.log('🔍 useEffect triggered:', {
+            isPartB,
+            partBSectionsLength: partBSections.length,
+            sectionsLength: sections.length,
+            currentSectionIndex,
+            partBSections: partBSections.map(s => `${s.name} (ID: ${s.id})`),
+            sections: sections.map(s => `${s.name} (ID: ${s.id})`)
+        });
 
-    useEffect(() => {
-        if (partBSections.length > 0 && isPartB) {
-            loadQuestions(partBSections[currentSectionIndex].id);
-        } else if (partBSections.length === 0 && isPartB) {
-            // If Part B has no sections, show a message and don't load questions
-            setQuestions([]);
-            showWarning('No Part B sections available for this inspection.');
+        // Consolidated logic to handle both Part A and Part B sections
+        if (isPartB) {
+            if (partBSections.length > 0) {
+                const currentSection = partBSections[currentSectionIndex];
+                console.log(`🚀 Loading Part B questions for section: ${currentSection.name} (ID: ${currentSection.id})`);
+                loadQuestions(currentSection.id);
+            } else {
+                // If Part B has no sections, show a message and don't load questions
+                setQuestions([]);
+                showWarning('No Part B sections available for this inspection.');
+            }
+        } else {
+            // Part A mode - use regular sections
+            if (sections.length > 0) {
+                const currentSection = sections[currentSectionIndex];
+                console.log(`🚀 Loading Part A questions for section: ${currentSection.name} (ID: ${currentSection.id})`);
+                loadQuestions(currentSection.id);
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [partBSections, currentSectionIndex, isPartB]);
+    }, [sections, partBSections, currentSectionIndex, isPartB]);
 
 
     const loadExistingInspection = async (reportId) => {
@@ -140,8 +154,10 @@ const NewInspection = () => {
 
     const loadQuestions = async (sectionId) => {
         try {
+            console.log(`📡 API Call: Getting questions for sectionId: ${sectionId}`);
             setLoading(true);
             const questionsData = await inspectionAPI.getQuestions(sectionId);
+            console.log(`📡 API Response: Got ${questionsData.length} questions for sectionId: ${sectionId}`);
             setQuestions(questionsData);
         } catch (error) {
             console.error('Error loading questions:', error);
@@ -352,9 +368,23 @@ const NewInspection = () => {
                 return;
             }
 
+            // Clear any existing questions and validation errors when switching to Part B
+            setQuestions([]);
+            setValidationErrors({ missingAnswers: [], missingNotes: [] });
+
+            console.log('🔄 Setting Part B sections:', sectionsData.map(s => `${s.name} (ID: ${s.id})`));
+
+            // Use a more reliable approach - set Part B sections first, then trigger the mode switch
             setPartBSections(sectionsData);
-            setIsPartB(true);
             setCurrentSectionIndex(0);
+
+            console.log('⏳ State updates queued, will switch to Part B mode in next tick...');
+
+            // Use setTimeout to ensure state updates are processed before switching mode
+            setTimeout(() => {
+                console.log('✅ Switching to Part B mode now');
+                setIsPartB(true);
+            }, 0);
 
             showSuccess(`Loaded ${sectionsData.length} Part B sections for detailed inspection`);
         } catch (error) {
@@ -453,6 +483,7 @@ const NewInspection = () => {
     const currentSections = isPartB ? partBSections : sections;
     const currentSection = currentSections[currentSectionIndex];
     const isLastSection = currentSectionIndex === currentSections.length - 1;
+
 
     // If Part B has no sections, show appropriate message
     if (isPartB && partBSections.length === 0) {
